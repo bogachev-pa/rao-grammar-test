@@ -1,0 +1,29 @@
+grammar org.xtext.example.rao.RAO with org.eclipse.xtext.xbase.Xbase
+
+generate rAO "http://www.xtext.org/example/rao/RAO"
+
+import "http://www.eclipse.org/xtext/xbase/Xbase"
+
+RAOModel:
+	{RAOModel} objects += RAOEntity*
+;
+
+RAOEntity
+	: ResourceType
+	| ResourceDeclaration
+;
+
+ResourceType:
+	'type' name = ID '{'
+		(params += RAOVariableDeclaration ';')+
+	'}'
+;
+
+RAOVariableDeclaration:
+	variable = FullJvmFormalParameter ('=' right = XExpression)?
+;
+
+ResourceDeclaration:
+	'resource' name = ID '=' reference = [ResourceType | ID]
+	'(' (params += XExpression (',' params += XExpression)*)? ')' ';'
+;
