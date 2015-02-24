@@ -8,8 +8,8 @@ import org.eclipse.xtext.naming.IQualifiedNameProvider
 
 import org.xtext.example.rao.rAO.ResourceType
 import org.xtext.example.rao.rAO.ResourceDeclaration
-import org.xtext.example.rao.rAO.RAOModel
 import org.eclipse.xtext.naming.QualifiedName
+import org.xtext.example.rao.rAO.Model
 
 class RAOJvmModelInferrer extends AbstractModelInferrer {
 
@@ -18,17 +18,20 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 	@Inject extension IQualifiedNameProvider
 
 	def dispatch void infer(
-		RAOModel element, IJvmDeclaredTypeAcceptor acceptor, boolean isPreIndexingPhase
+		Model element, IJvmDeclaredTypeAcceptor acceptor, boolean isPreIndexingPhase
 	) {
 		acceptor.accept(element.toClass(QualifiedName.create("db"))) [
 			for (entity : element.objects) {
 				switch entity {
 					ResourceDeclaration: {
-						val resource = element.toField(
+						members += element.toField(
 							entity.name,
-							entity.reference.class.typeRef()
+							entity.constructor.inferredType
+						) [initializer = entity.constructor]
+						members += element.toGetter(
+							entity.name,
+							entity.constructor.inferredType
 						)
-						members += resource
 					}
 				}
 			}
@@ -37,12 +40,14 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 			switch entity {
 				ResourceType: {
 					acceptor.accept(entity.toClass(entity.fullyQualifiedName)) [
+
 						members += entity.toField("name", String.typeRef)
+
 						for (param : entity.params) {
 							members += entity.toField(
 								param.variable.name,
 								param.variable.parameterType
-							)[initializer = param.right]
+							) [initializer = param.right]
 							members += entity.toSetter(
 								param.variable.name,
 								param.variable.parameterType
@@ -52,6 +57,17 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 								param.variable.parameterType
 							)
 						}
+
+						members += entity.toConstructor[
+							for (param : entity.params)
+								parameters += entity.toParameter(
+									param.variable.name,
+									param.variable.parameterType
+								)
+							body = '''«FOR param: entity.params»
+									this.«param.variable.name» = «param.variable.name»;
+								«ENDFOR»'''
+						]
 					]
 				}
 			}
