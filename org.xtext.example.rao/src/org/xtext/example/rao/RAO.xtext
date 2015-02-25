@@ -12,6 +12,7 @@ Model:
 Entity
 	: ResourceType
 	| ResourceDeclaration
+	| ConstantDeclaration
 ;
 
 ResourceType:
@@ -34,4 +35,8 @@ ResourceConstructorCall returns XExpression:
 	explicitConstructorCall ?= '('
 		(arguments += XExpression (',' arguments += XExpression)* )?
 	')'
+;
+
+ConstantDeclaration:
+	'const' constant = VariableDeclaration ';'
 ;

@@ -10,6 +10,7 @@ import org.xtext.example.rao.rAO.ResourceType
 import org.xtext.example.rao.rAO.ResourceDeclaration
 import org.eclipse.xtext.naming.QualifiedName
 import org.xtext.example.rao.rAO.Model
+import org.xtext.example.rao.rAO.ConstantDeclaration
 
 class RAOJvmModelInferrer extends AbstractModelInferrer {
 
@@ -31,6 +32,16 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 						members += element.toGetter(
 							entity.name,
 							entity.constructor.inferredType
+						)
+					}
+					ConstantDeclaration: {
+						members += element.toField(
+							entity.constant.variable.name,
+							entity.constant.variable.parameterType
+						) [final = true]
+						members += element.toGetter(
+							entity.constant.variable.name,
+							entity.constant.variable.parameterType
 						)
 					}
 				}
