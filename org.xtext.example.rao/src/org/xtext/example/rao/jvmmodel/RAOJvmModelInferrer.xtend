@@ -11,6 +11,11 @@ import org.xtext.example.rao.rAO.ResourceDeclaration
 import org.eclipse.xtext.naming.QualifiedName
 import org.xtext.example.rao.rAO.Model
 import org.xtext.example.rao.rAO.ConstantDeclaration
+import org.eclipse.emf.common.util.EList
+import org.eclipse.xtext.common.types.JvmMember
+import org.eclipse.xtext.common.types.JvmTypeReference
+import org.xtext.example.rao.rAO.Entity
+import org.eclipse.xtext.xbase.XExpression
 
 class RAOJvmModelInferrer extends AbstractModelInferrer {
 
@@ -19,29 +24,29 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 	@Inject extension IQualifiedNameProvider
 
 	def dispatch void infer(
-		Model element, IJvmDeclaredTypeAcceptor acceptor, boolean isPreIndexingPhase
+		Model element,
+		IJvmDeclaredTypeAcceptor acceptor,
+		boolean isPreIndexingPhase
 	) {
 		acceptor.accept(element.toClass(QualifiedName.create("db"))) [
 			for (entity : element.objects) {
 				switch entity {
 					ResourceDeclaration: {
-						members += element.toField(
+						declVarFull(
+							members,
+							entity,
 							entity.name,
-							entity.constructor.inferredType
-						) [initializer = entity.constructor]
-						members += element.toGetter(
-							entity.name,
-							entity.constructor.inferredType
+							entity.constructor.inferredType,
+							entity.constructor
 						)
 					}
 					ConstantDeclaration: {
-						members += element.toField(
+						declConstFull(
+							members,
+							entity,
 							entity.constant.variable.name,
-							entity.constant.variable.parameterType
-						) [final = true]
-						members += element.toGetter(
-							entity.constant.variable.name,
-							entity.constant.variable.parameterType
+							entity.constant.variable.parameterType,
+							entity.constant.right
 						)
 					}
 				}
@@ -51,31 +56,23 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 			switch entity {
 				ResourceType: {
 					acceptor.accept(entity.toClass(entity.fullyQualifiedName)) [
-
 						members += entity.toField("name", String.typeRef)
-
 						for (param : entity.params) {
-							members += entity.toField(
+							declVarFull(
+								members,
+								entity,
 								param.variable.name,
-								param.variable.parameterType
-							) [initializer = param.right]
-							members += entity.toSetter(
-								param.variable.name,
-								param.variable.parameterType
-							)
-							members += entity.toGetter(
-								param.variable.name,
-								param.variable.parameterType
+								param.variable.parameterType,
+								param.right
 							)
 						}
-
-						members += entity.toConstructor[
+						members += entity.toConstructor [
 							for (param : entity.params)
 								parameters += entity.toParameter(
 									param.variable.name,
 									param.variable.parameterType
 								)
-							body = '''«FOR param: entity.params»
+							body = '''«FOR param : entity.params»
 									this.«param.variable.name» = «param.variable.name»;
 								«ENDFOR»'''
 						]
@@ -83,5 +80,21 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 				}
 			}
 		}
+	}
+
+	def void declVarFull(EList<JvmMember> members, Entity entity, String name, JvmTypeReference type,
+		XExpression initExpr) {
+		members += entity.toField(name, type)[initializer = initExpr]
+		members += entity.toSetter(name, type)
+		members += entity.toGetter(name, type)
+	}
+
+	def void declConstFull(EList<JvmMember> members, Entity entity, String name, JvmTypeReference type,
+		XExpression initExpr) {
+		members += entity.toField(name, type) [
+			initializer = initExpr
+			final = true
+		]
+		members += entity.toGetter(name, type)
 	}
 }
