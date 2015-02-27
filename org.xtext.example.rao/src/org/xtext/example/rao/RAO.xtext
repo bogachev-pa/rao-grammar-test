@@ -13,6 +13,7 @@ Entity
 	: ResourceType
 	| ResourceDeclaration
 	| ConstantDeclaration
+	| FunctionDeclaration
 ;
 
 ResourceType:
@@ -39,4 +40,11 @@ ResourceConstructorCall returns XExpression:
 
 ConstantDeclaration:
 	'const' constant = VariableDeclaration ';'
+;
+
+FunctionDeclaration:
+	type = JvmTypeReference name = QualifiedName '('
+		(params += FullJvmFormalParameter (
+			',' params += FullJvmFormalParameter)*)?
+	')' body = XBlockExpression
 ;

@@ -16,6 +16,7 @@ import org.eclipse.xtext.common.types.JvmMember
 import org.eclipse.xtext.common.types.JvmTypeReference
 import org.xtext.example.rao.rAO.Entity
 import org.eclipse.xtext.xbase.XExpression
+import org.xtext.example.rao.rAO.FunctionDeclaration
 
 class RAOJvmModelInferrer extends AbstractModelInferrer {
 
@@ -48,6 +49,16 @@ class RAOJvmModelInferrer extends AbstractModelInferrer {
 							entity.constant.variable.parameterType,
 							entity.constant.right
 						)
+					}
+					FunctionDeclaration: {
+						members += entity.toMethod(entity.name, entity.type) [
+							for (param : entity.params)
+								parameters += entity.toParameter(param.name,
+									param.parameterType)
+							static = false
+							varArgs = false
+							body = entity.body
+						]
 					}
 				}
 			}
